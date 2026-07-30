@@ -1,0 +1,142 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <conio.h>
+
+#define WIDTH 12
+#define HEIGHT 12
+
+int grid[HEIGHT][WIDTH] = {
+    {1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,0,0,0,0,1,0,0,0,0,0,1},
+    {1,0,1,1,0,1,0,1,1,1,0,1},
+    {1,0,0,1,0,0,0,0,0,1,0,1},
+    {1,1,0,1,1,1,1,1,0,1,0,1},
+    {1,0,0,0,0,0,0,1,0,0,0,1},
+    {1,0,1,1,1,1,0,1,1,1,0,1},
+    {1,0,1,0,0,0,0,0,0,1,0,1},
+    {1,0,1,0,1,1,1,1,0,1,0,1},
+    {1,0,0,0,1,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,1,1,0,0,0,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1}
+};
+
+int spiderX = 1, spiderY = 1;
+int playerX = 10, playerY = 10;
+int score = 0;
+
+typedef struct {
+    int x, y;
+} Point;
+
+int dx[] = {-1, 1, 0, 0};
+int dy[] = {0, 0, -1, 1};
+
+void moveSpiderBFS() {
+    if (spiderX == playerX && spiderY == playerY) return;
+
+    Point queue[WIDTH * HEIGHT];
+    int head = 0, tail = 0;
+
+    Point parent[HEIGHT][WIDTH];
+    int visited[HEIGHT][WIDTH] = {0};
+
+    queue[tail++] = (Point){spiderX, spiderY};
+    visited[spiderX][spiderY] = 1;
+    parent[spiderX][spiderY] = (Point){-1, -1};
+
+    int found = 0;
+
+    while (head < tail) {
+        Point current = queue[head++];
+
+        if (current.x == playerX && current.y == playerY) {
+            found = 1;
+            break;
+        }
+
+        for (int i = 0; i < 4; i++) {
+            int nx = current.x + dx[i];
+            int ny = current.y + dy[i];
+
+            if (nx >= 0 && nx < HEIGHT && ny >= 0 && ny < WIDTH) {
+                if (grid[nx][ny] == 0 && !visited[nx][ny]) {
+                    visited[nx][ny] = 1;
+                    parent[nx][ny] = current;
+                    queue[tail++] = (Point){nx, ny};
+                }
+            }
+        }
+    }
+
+    if (found) {
+        Point curr = (Point){playerX, playerY};
+        Point nextStep = curr;
+
+        while (parent[curr.x][curr.y].x != -1) {
+            nextStep = curr;
+            curr = parent[curr.x][curr.y];
+        }
+
+        spiderX = nextStep.x;
+        spiderY = nextStep.y;
+    }
+}
+
+void drawGame() {
+    system("cls");
+    printf("=== BFS SPIDER PATHFINDING GAME ===\n");
+    printf("Score: %d | Controls: W, A, S, D (Q to Quit)\n\n", score);
+
+    for (int i = 0; i < HEIGHT; i++) {
+        for (int j = 0; j < WIDTH; j++) {
+            if (i == spiderX && j == spiderY) {
+                printf("S ");
+            } else if (i == playerX && j == playerY) {
+                printf("F ");
+            } else if (grid[i][j] == 1) {
+                printf("# ");
+            } else {
+                printf(". ");
+            }
+        }
+        printf("\n");
+    }
+}
+
+int main() {
+    char input;
+
+    while (1) {
+        drawGame();
+
+        if (spiderX == playerX && spiderY == playerY) {
+            printf("\n GAME OVER! Spider caught the Fly. Total Score: %d\n", score);
+            break;
+        }
+
+        if (kbhit()) {
+            input = getch();
+
+            int nextPX = playerX;
+            int nextPY = playerY;
+
+            if (input == 'w') nextPX--;
+            if (input == 's') nextPX++;
+            if (input == 'a') nextPY--;
+            if (input == 'd') nextPY++;
+            if (input == 'q') {
+                printf("\nGame Exited.\n");
+                break;
+            }
+
+            if (grid[nextPX][nextPY] == 0) {
+                playerX = nextPX;
+                playerY = nextPY;
+                score++;
+                moveSpiderBFS();
+            }
+        }
+    }
+
+    return 0;
+}
